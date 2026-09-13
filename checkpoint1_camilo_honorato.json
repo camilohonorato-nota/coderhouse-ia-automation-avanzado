@@ -1,0 +1,200 @@
+{
+  "name": "Preentrega 1 Camilo Honorato",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "responseMode": "lastNode"
+        }
+      },
+      "id": "5f3b2968-d712-4f59-ae06-b4bddd91ae2f",
+      "name": "Consulta entrante (Chat Trigger)",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -240,
+        -16
+      ],
+      "webhookId": "e7b1c9d4-2f33-4a55-8c77-0a1b2c3d4e5f"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "# ROL\nEres el Asistente de Triaje Comercial de Timbres y Grabados, una empresa chilena con mas de 30 anos de trayectoria dedicada a la fabricacion de timbres de goma, timbres automaticos, grabado laser y senaletica corporativa. Atiendes el primer contacto de clientes que escriben por el sitio web.\n\n# AMBITO\nSolo respondes consultas relacionadas con:\n- Productos del catalogo: tipos de timbre, materiales, tamanos, grabado laser.\n- Precios referenciales y rangos por volumen.\n- Plazos de fabricacion y despacho.\n- Requisitos para cotizar (cantidad, medidas, archivo de arte, ciudad de despacho).\n\nCualquier tema fuera de este ambito queda fuera de tu alcance.\n\n# OBJETIVO\nEn el menor numero de mensajes posible debes:\n1. Entender que necesita el cliente.\n2. Consultar el catalogo oficial antes de mencionar cualquier precio, material o plazo.\n3. Entregar una respuesta clara con el producto sugerido, su rango de precio y el plazo estimado.\n4. Reunir los datos minimos para que el equipo humano emita una cotizacion formal: nombre, correo, cantidad y ciudad de despacho.\n\n# REGLAS\n- Nunca inventes precios, plazos, medidas ni disponibilidad. Si el dato no esta en el catalogo, dilo explicitamente y ofrece derivar al equipo comercial.\n- Todo precio que entregues debe declararse como referencial, en pesos chilenos y sujeto a confirmacion.\n- No prometas descuentos, condiciones de pago, ni fechas de entrega cerradas.\n- No solicites RUT, datos bancarios, ni informacion de tarjetas.\n- No emites ordenes de compra, no confirmas pedidos y no modificas pedidos existentes.\n- Responde en espanol de Chile, en tono profesional y directo, sin tutear en exceso.\n- No utilices giros de lenguaje inclusivo. Emplea las formas gramaticales estandar del espanol.\n- Maximo 120 palabras por respuesta, salvo que el cliente pida un detalle mayor.\n\n# ESCALAMIENTO\nDeriva al equipo humano cuando ocurra cualquiera de estos casos:\n- El cliente pide una cotizacion formal, factura o condiciones comerciales especiales.\n- El pedido supera las 100 unidades o requiere un diseno personalizado complejo.\n- El cliente reclama por un pedido ya realizado.\n- Consultaste el catalogo dos veces y sigues sin el dato necesario.\n\nAl escalar, responde: \"Voy a derivar tu consulta al equipo comercial para que te contacte con una cotizacion formal.\" y resume en una linea que necesita el cliente.",
+          "maxIterations": 8
+        }
+      },
+      "id": "13097797-879b-4169-8963-fdc86a1f250c",
+      "name": "AI Agent - Motor de Razonamiento",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        80,
+        -16
+      ],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "CATALOGO OFICIAL DE PRODUCTOS Y PRECIOS DE TIMBRES Y GRABADOS.\n\nQUE CONTIENE ESTA HERRAMIENTA:\nDevuelve la planilla maestra del catalogo comercial vigente. Cada fila corresponde a un producto e incluye las columnas: categoria, nombre_producto, material, medidas_mm, precio_unitario_referencial_clp, precio_desde_50_unidades_clp, plazo_fabricacion_dias_habiles, requiere_archivo_de_arte y observaciones.\n\nCUANDO DEBES ACTIVARLA DE FORMA AUTONOMA:\n- Cuando el cliente pregunte cuanto cuesta un timbre, un grabado o cualquier producto, en forma directa o indirecta (\"a que precio sale\", \"es caro\", \"tienen algo mas economico\").\n- Cuando el cliente pregunte por plazos de entrega o fabricacion.\n- Cuando el cliente mencione un tipo de producto y necesites confirmar si existe en el catalogo antes de ofrecerlo (timbre de goma, timbre automatico, timbre de bolsillo, grabado laser en metal, senaletica, placas).\n- Cuando el cliente pida medidas, materiales disponibles o alternativas a un producto.\n- Cuando el cliente pregunte por descuentos por volumen o compras sobre 50 unidades.\n- Cuando debas confirmar si un producto requiere que el cliente envie un archivo de diseno.\n\nCUANDO NO DEBES ACTIVARLA:\n- Saludos, agradecimientos o despedidas sin consulta comercial.\n- Reclamos por pedidos ya realizados, que van directo a escalamiento humano.\n- Preguntas sobre la direccion o el horario de atencion de la empresa.\n\nREGLA CRITICA: no entregues ningun precio, plazo ni medida que no provenga de esta herramienta. Si el producto consultado no aparece en los resultados, informa al cliente que no esta en el catalogo vigente y deriva al equipo comercial. No estimes, no aproximes y no uses precios de conocimiento general.",
+        "documentId": {
+          "__rl": true,
+          "value": "1ia3NEK6lnNhu_cZ7G8P9F8VoYWxS1mCX4JZklyMbN4o",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 379934078,
+          "mode": "list",
+          "cachedResultName": "catalogo_timbres_y_grabados",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ia3NEK6lnNhu_cZ7G8P9F8VoYWxS1mCX4JZklyMbN4o/edit#gid=379934078"
+        },
+        "options": {}
+      },
+      "id": "fe9d279f-742f-42a9-9f5f-997492118338",
+      "name": "Consultar Catalogo Oficial",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        208
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "rRa6KPsPXL06LW8Z",
+          "name": "Google Sheets Camilo.honroato"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "camilo.honorato@gmail.com",
+        "subject": "=[Observabilidad] Ejecucion {{ $execution.id }} - Agente de Triaje Comercial",
+        "emailType": "text",
+        "message": "=REPORTE AUTOMATICO DE SUPERVISION HUMANA\n=========================================\n\nWorkflow: {{ $workflow.name }}\nID de ejecucion: {{ $execution.id }}\nFecha: {{ $now.setZone('America/Santiago').toFormat('dd-MM-yyyy HH:mm:ss') }}\n\n--- CONSULTA DEL USUARIO ---\n{{ $('Consulta entrante (Chat Trigger)').item.json.chatInput }}\n\n--- RESPUESTA FINAL DEL AGENTE ---\n{{ $json.output }}\n\n--- AUDITORIA DEL RAZONAMIENTO (Execution Log) ---\nHerramientas invocadas y pasos intermedios:\n\n{{ JSON.stringify($json.intermediateSteps ?? [], null, 2) }}\n\n--- ESTADO ---\n{{ $json.error ? 'ERROR DETECTADO: ' + JSON.stringify($json.error) : 'Ejecucion completada sin errores.' }}\n",
+        "options": {}
+      },
+      "id": "ce283e10-33d8-4351-afd2-956b6c5c1065",
+      "name": "Log de Observabilidad (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        400,
+        -16
+      ],
+      "webhookId": "bca977b1-1ab5-441f-975f-77dd605991e8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ChUd7IgB7wNKuBb3",
+          "name": "Gmail camiloh@"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Decisiones de diseno\n\n**Sin decision lineal previa al agente.** El Chat Trigger entra directo al AI Agent. No se antepone un nodo IF ni un Switch, porque la ramificacion la decide el propio modelo en el ciclo ReAct. Poner un bloque rigido antes convertiria al agente en el final de una cadena determinista.\n\n**Guardrail de iteraciones.** Se limita a 8 vueltas maximas en las opciones del agente, mas Retry On Fail con 5 reintentos. Esto acota el gasto por ejecucion.\n\n**La herramienta va lateral.** Google Sheets esta conectada al puerto Tool del agente, no como nodo secuencial del lienzo.",
+        "height": 420,
+        "width": 420,
+        "color": 4
+      },
+      "id": "aab5bb5f-45e7-40b6-8618-881acd5a04d5",
+      "name": "Nota de diseno",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -528
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -64,
+        192
+      ],
+      "id": "da4a6e88-ef17-4fa0-82d9-0aa9a233199f",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "OMex0tHGPLtQ1S8E",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Consulta entrante (Chat Trigger)": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Motor de Razonamiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Motor de Razonamiento": {
+      "main": [
+        [
+          {
+            "node": "Log de Observabilidad (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar Catalogo Oficial": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent - Motor de Razonamiento",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Motor de Razonamiento",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6bcae23e-487e-43e6-905c-e330eaae14c0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "071beab375c8a980724b7fbee89f3a3af596c36a7067385ee0d847c0411dd379"
+  },
+  "id": "4JNbAFKGJ45iAK9X",
+  "tags": []
+}
