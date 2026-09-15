@@ -20,6 +20,8 @@
     },
     {
       "parameters": {
+        "agent": "toolsAgent",
+        "promptType": "auto",
         "options": {
           "systemMessage": "# ROL\nEres el Asistente de Triaje Comercial de Timbres y Grabados, una empresa chilena con mas de 30 anos de trayectoria dedicada a la fabricacion de timbres de goma, timbres automaticos, grabado laser y senaletica corporativa. Atiendes el primer contacto de clientes que escriben por el sitio web.\n\n# AMBITO\nSolo respondes consultas relacionadas con:\n- Productos del catalogo: tipos de timbre, materiales, tamanos, grabado laser.\n- Precios referenciales y rangos por volumen.\n- Plazos de fabricacion y despacho.\n- Requisitos para cotizar (cantidad, medidas, archivo de arte, ciudad de despacho).\n\nCualquier tema fuera de este ambito queda fuera de tu alcance.\n\n# OBJETIVO\nEn el menor numero de mensajes posible debes:\n1. Entender que necesita el cliente.\n2. Consultar el catalogo oficial antes de mencionar cualquier precio, material o plazo.\n3. Entregar una respuesta clara con el producto sugerido, su rango de precio y el plazo estimado.\n4. Reunir los datos minimos para que el equipo humano emita una cotizacion formal: nombre, correo, cantidad y ciudad de despacho.\n\n# REGLAS\n- Nunca inventes precios, plazos, medidas ni disponibilidad. Si el dato no esta en el catalogo, dilo explicitamente y ofrece derivar al equipo comercial.\n- Todo precio que entregues debe declararse como referencial, en pesos chilenos y sujeto a confirmacion.\n- No prometas descuentos, condiciones de pago, ni fechas de entrega cerradas.\n- No solicites RUT, datos bancarios, ni informacion de tarjetas.\n- No emites ordenes de compra, no confirmas pedidos y no modificas pedidos existentes.\n- Responde en espanol de Chile, en tono profesional y directo, sin tutear en exceso.\n- No utilices giros de lenguaje inclusivo. Emplea las formas gramaticales estandar del espanol.\n- Maximo 120 palabras por respuesta, salvo que el cliente pida un detalle mayor.\n\n# ESCALAMIENTO\nDeriva al equipo humano cuando ocurra cualquiera de estos casos:\n- El cliente pide una cotizacion formal, factura o condiciones comerciales especiales.\n- El pedido supera las 100 unidades o requiere un diseno personalizado complejo.\n- El cliente reclama por un pedido ya realizado.\n- Consultaste el catalogo dos veces y sigues sin el dato necesario.\n\nAl escalar, responde: \"Voy a derivar tu consulta al equipo comercial para que te contacte con una cotizacion formal.\" y resume en una linea que necesita el cliente.",
           "maxIterations": 8
@@ -66,14 +68,14 @@
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "rRa6KPsPXL06LW8Z",
+          "id": "",
           "name": "Google Sheets Camilo.honroato"
         }
       }
     },
     {
       "parameters": {
-        "sendTo": "camilo.honorato@gmail.com",
+        "sendTo": "supervisor@empresa.cl",
         "subject": "=[Observabilidad] Ejecucion {{ $execution.id }} - Agente de Triaje Comercial",
         "emailType": "text",
         "message": "=REPORTE AUTOMATICO DE SUPERVISION HUMANA\n=========================================\n\nWorkflow: {{ $workflow.name }}\nID de ejecucion: {{ $execution.id }}\nFecha: {{ $now.setZone('America/Santiago').toFormat('dd-MM-yyyy HH:mm:ss') }}\n\n--- CONSULTA DEL USUARIO ---\n{{ $('Consulta entrante (Chat Trigger)').item.json.chatInput }}\n\n--- RESPUESTA FINAL DEL AGENTE ---\n{{ $json.output }}\n\n--- AUDITORIA DEL RAZONAMIENTO (Execution Log) ---\nHerramientas invocadas y pasos intermedios:\n\n{{ JSON.stringify($json.intermediateSteps ?? [], null, 2) }}\n\n--- ESTADO ---\n{{ $json.error ? 'ERROR DETECTADO: ' + JSON.stringify($json.error) : 'Ejecucion completada sin errores.' }}\n",
@@ -90,7 +92,7 @@
       "webhookId": "bca977b1-1ab5-441f-975f-77dd605991e8",
       "credentials": {
         "gmailOAuth2": {
-          "id": "ChUd7IgB7wNKuBb3",
+          "id": "",
           "name": "Gmail camiloh@"
         }
       }
@@ -133,7 +135,7 @@
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
-          "id": "OMex0tHGPLtQ1S8E",
+          "id": "",
           "name": "OpenAi account"
         }
       }
@@ -192,8 +194,7 @@
   },
   "versionId": "6bcae23e-487e-43e6-905c-e330eaae14c0",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "071beab375c8a980724b7fbee89f3a3af596c36a7067385ee0d847c0411dd379"
+    "templateCredsSetupCompleted": true
   },
   "id": "4JNbAFKGJ45iAK9X",
   "tags": []
