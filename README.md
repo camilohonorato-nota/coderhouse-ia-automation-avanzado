@@ -148,7 +148,8 @@ Chat Trigger
  → AI Agent "Router de Triaje"              toolsAgent explícito · memoria en el System Prompt
      ├── Chat Model: gpt-4o
      ├── Memoria de Corto Plazo: Postgres Chat Memory (últimos 10 mensajes)
-     └── Output Parser estructurado
+     └── Autocorrector de Formato (Auto-fixing Output Parser · gpt-4o-mini)
+           └── Formato de Clasificacion (esquema JSON estricto: required + enum)
  → Contrato de Datos → Switch → Worker 1 / Worker 2 / Ruta de Escape    (igual que CP2)
  → Log de Trazabilidad (Gmail)              ahora incluye la memoria recuperada
  → Actualizar Memoria (Airtable · Update)   nombre, estado, datos clave, contador +1
@@ -205,6 +206,7 @@ Validación de ejecución
 2	Recurrente con referencia previa	"Perfecto, entonces quiero la cotización formal por 40 de esos"	Rama true; memoria visible en el System Prompt enviado al modelo; misma fila con SOLICITUD_COTIZACION, contador 2
 3	Summarization	Cuatro consultas más sobre plazos, archivo de arte y letrero de acrílico	Resumen con datos duros (cliente, 40 timbres, 1 letrero) guardado y reinyectado como `last_summary`
 4	Aislamiento entre sesiones	"Hola, ¿cuál es mi nombre y qué había pedido?" (sesión nueva)	Nueva fila sin nombre; Router escala a ESCALAMIENTO_HUMANO sin datos de la sesión 1
+5	Verificación de la incidencia 6	Sesión larga con mensajes dependientes del historial ("Quiero cotizar 30 de esos", "Confírmame lo que te pedí")	El autocorrector corrigió una respuesta rechazada; estado válido y resumen guardado
 Incidencias encontradas en las pruebas y su corrección
 #	Síntoma	Causa	Corrección
 1	Buscar Memoria: `Unknown field name: ""`	Regla de orden (Sort) vacía enviada a la API	Se eliminó la regla
@@ -212,15 +214,22 @@ Incidencias encontradas en las pruebas y su corrección
 3	Generar Resumen: `Model output doesn't fit required format`	El prompt exigía un JSON "sin nada alrededor" y chocaba con el envoltorio del Output Parser	El prompt remite al formato del parser; esquema con tres claves obligatorias
 4	Resumen con campos vacíos	La consulta leía `message.data.content`; esta versión guarda `message.content`	`COALESCE` sobre ambas rutas
 5	Router: `Model output doesn't fit required format` ante una pregunta directa	El modelo respondió en texto libre	Reglas explícitas: siempre devolver el objeto; lo no clasificable va a ESCALAMIENTO_HUMANO
-6	Estado del Caso guardado como `undefined`	[COMPLETAR]	[COMPLETAR]
+6	Estado del Caso guardado como `undefined`; con esquema estricto, el Router falla desde el 3er mensaje de sesiones con historial	Causa probable: la memoria muestra al modelo sus clasificaciones previas como JSON plano y las imita sin el formato que exige el parser. El parser generado desde ejemplo no tenía claves obligatorias y dejó pasar un objeto sin `categoria`	Esquema manual con `required` y `enum`, Auto-fixing Output Parser con gpt-4o-mini y respaldo `ESCALAMIENTO_HUMANO` en el Contrato de Datos. Verificado: en una sesión larga el autocorrector se activó en el 4º mensaje y el flujo completó
 Limitaciones conocidas
 La identidad es por sesión de chat, no por cliente: otro navegador equivale a una sesión
 nueva. Mejora futura: correlacionar por correo o RUT.
 El chat muestra la salida técnica del último nodo; falta un nodo de respuesta final al
 cliente.
+El autocorrector mitiga el síntoma, pero la causa de fondo (el modelo imita el historial en JSON)
+sigue presente. Mejora futura: guardar en memoria un texto neutro o migrar a una versión
+más reciente del nodo AI Agent.
 `Datos Clave` se sobrescribe con "no informado" si el último mensaje no trae producto
 (el resumen consolidado conserva el detalle).
 ---
+Nota sobre parámetros explícitos
+Al guardar, n8n elimina del archivo los parámetros cuyo valor coincide con el valor por
+defecto (por ejemplo `"agent": "toolsAgent"` o `"tableName"`). Los `.json` publicados se
+revisaron y esos parámetros se volvieron a escribir de forma explícita.
 Notas sobre credenciales y seguridad
 Los archivos `.json` publicados no contienen secretos. n8n exporta únicamente el nombre
 visible y un identificador interno de cada credencial; nunca la API key, el Client Secret ni
