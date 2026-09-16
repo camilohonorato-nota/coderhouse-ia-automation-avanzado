@@ -236,5 +236,71 @@ visible y un identificador interno de cada credencial; nunca la API key, el Clie
 los tokens, que permanecen cifrados en la base de datos de la instancia. Aun así, los
 identificadores se removieron de los archivos publicados y las direcciones de correo se
 reemplazaron por genéricas.
+Checkpoint 4 — Integraciones avanzadas e interconexión de sistemas
+
+Archivo: checkpoint4_camilo_honorato.json · Documentación con capturas: PreEntrega_Modulo4_CamiloHonorato.pdf
+
+Evolución del Manager del Módulo 3. El Chat Trigger se reemplaza por una casilla de soporte en Gmail y el flujo se integra, vía OAuth2, con tres herramientas externas:
+
+Herramienta	Rol en el caso	Uso en el flujo
+Gmail	Casilla de soporte al cliente	Trigger de correos entrantes y creación de borradores
+HubSpot	CRM de la tienda (fuente única de verdad)	Búsqueda y alta/actualización de contactos
+Slack	Canal del equipo de operaciones (#operaciones)	Aviso corto por cada correo procesado (reemplaza el log de Gmail del M3)
+
+HubSpot, Slack y la casilla de soporte son entornos de demostración creados para el caso. No corresponden a sistemas reales de la empresa y todos los datos son ficticios.
+
+Arquitectura
+Gmail Trigger (casilla demo, sin adjuntos, filtro -from:me)
+ → ① IF anti auto-reply ──true──▶ Stop (corta el bucle)
+ → ④ Set limpieza y validación → IF payload válido ──false──▶ Stop (evita el 400)
+ → Buscar Memoria (Airtable, por correo) → IF recurrente → Contexto para el Agente
+ → AI Agent "Router de Triaje" (igual que el M3)
+ → Contrato de Datos → Switch → Worker 1 / Worker 2 / Ruta de Escape
+ → Redactor de Respuesta (gpt-4o-mini)
+ → ② HubSpot Look up por email → IF existe → Update | Create
+ → ③ Gmail Create Draft (Human-in-the-loop)
+ → Set Payload para Slack → Slack #operaciones
+ → Actualizar Memoria → IF > 5 intercambios → Resumen (igual que el M3)
+Los cuatro guardrails
+Nodo	Qué hace	Riesgo que neutraliza
+① IF anti auto-reply	Justo después del trigger. Corta si el asunto contiene auto-reply, autoreply, automatic reply, out of office, undeliverable, respuesta automática o fuera de la oficina, o si el remitente contiene no-reply, noreply o mailer-daemon	Bucle infinito de auto-respuestas
+② Look up antes del Create	HubSpot Search por email (Always Output Data) y un IF que decide entre Update y Create	Error 409 (contactos duplicados)
+③ Create Draft	La respuesta de la IA queda como borrador en el hilo del cliente. No existe ningún nodo de envío	Envío sin aprobación humana
+④ Set de limpieza	Deja solo from_email, from_name, subject, body_text, thread_id, message_id (sin HTML, citas ni adjuntos). Un IF valida email no vacío, formato válido y cuerpo presente. Otro Set arma un texto corto para Slack	Error 400 y saturación del canal
+Cambios respecto del Módulo 3
+Identidad por correo: el session_id de Airtable, Postgres y el contrato con los Workers es el email del remitente (resuelve la limitación de identidad por sesión del M3).
+Redactor de Respuesta: nuevo LLM que escribe el correo al cliente con los datos del Worker, sin inventar precios; en escalamientos redacta un acuse de recibo.
+Log a Slack: un log por Gmail en una casilla vigilada por el trigger podía generar un bucle.
+Mínimo privilegio
+
+Los scopes de las credenciales OAuth2 de Gmail, HubSpot y Slack están fijados en el código de n8n 1.108.2 y no se pueden recortar desde la interfaz (se obtuvieron del parámetro scope de la URL de autorización). El mínimo privilegio se aplica en los nodos:
+
+Conector	La credencial pide	El flujo usa
+Gmail	Lectura, modificación y borradores	Solo lee entrantes y crea borradores
+HubSpot	17 scopes (contacts, companies, deals, owners, schemas, lists, forms, tickets)	Solo crm.objects.contacts.read y .write, campos email, firstname, lastname y lifecyclestage
+Slack	17 user scopes + chat:write (bot)	Solo chat:write en #operaciones
+Test de regresión
+
+Prueba manual con Test step nodo por nodo y luego Execute Workflow. Correo de prueba:
+
+Asunto: Consulta timbres automáticos
+Cuerpo: Hola, soy Andrea Soto de Ferretería Los Aromos. ¿Qué precio tiene el timbre automático y cuánto demora la fabricación? Saludos.
+
+Resultado: rama false del IF anti auto-reply → payload válido → cliente nuevo en Airtable → CONSULTA_CATALOGO → Worker 1 → respuesta redactada → Look up sin resultados → contacto creado → borrador en Gmail → mensaje en Slack → memoria actualizada. En una segunda ejecución con el mismo remitente, el Look up encontró el contacto y el flujo pasó por la rama Update (HubSpot mantuvo un único contacto). Capturas en el PDF.
+
+Incidencias
+#	Incidencia	Causa	Corrección
+1	Google Error 400: redirect_uri_mismatch	Se usaron datos de "Claves de API" / cuenta de servicio en vez del cliente OAuth 2.0	Usar ID y secreto del cliente OAuth tipo Aplicación web
+2	HubSpot sin botón "Crear app"	HubSpot desactivó la creación de apps públicas legacy en junio de 2026	App creada con la CLI (hs project create), privada y con OAuth
+3	Deploy fallido por scope tickets	HubSpot retiró tickets y lo reemplazó por crm.objects.tickets.read/write y crm.schemas.tickets.read/write	Reemplazo en app-hsmeta.json y nuevo deploy
+4	HubSpot: redirect URL no coincide	El deploy fallido dejó la app con http://localhost:3000	Se resolvió con el deploy de la incidencia 3
+5	n8n: The OAuth callback state is invalid	Autorización iniciada fuera del botón Connect de n8n o desde una ventana antigua	Recargar n8n, guardar la credencial y conectar desde n8n
+6	Nodo HubSpot sin Create/Update separados	En n8n 1.108.2 solo existe "Create or Update" (upsert)	Ambas ramas usan upsert después del Look up; Create marca lead, Update solo el nombre
+7	Parámetros por defecto eliminados al exportar	n8n omite valores por defecto al guardar	Reescritos a mano en el JSON publicado
+Limitaciones
+Scopes OAuth2 más amplios que el uso real (fijados por n8n).
+El test recorrió la ruta CONSULTA_CATALOGO; las ramas de corte (auto-reply, payload inválido) se verificaron por configuración, sin un correo automático real.
+Proyecto de Google Cloud en modo Testing: los tokens de Gmail vencen cada 7 días.
+El workflow se deja inactivo: activarlo haría que cada correo entrante consuma saldo de OpenAI.
 Para importar cualquier workflow: crear las credenciales propias en n8n (OpenAI, Google
 Sheets, Gmail y, desde el Checkpoint 3, Airtable y Postgres) y seleccionarlas en cada nodo.
