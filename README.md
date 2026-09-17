@@ -311,6 +311,12 @@ Sheets, Gmail y, desde el Checkpoint 3, Airtable y Postgres) y seleccionarlas en
 El Redactor de Respuesta pasa de LLM Chain a **AI Agent (Tools Agent) con RAG**: antes de responder un correo consulta el *Manual de Políticas Comerciales* (documento ficticio de 22 secciones) mediante la herramienta `manual_politicas_tyg`.
 
 - **Parseo:** LlamaParse (nivel Cost Effective), con curación manual del markdown (jerarquía de títulos y tablas partidas por salto de página).
+### Checkpoint 6 — Voice AI (STT/TTS)
+- Entrega: `PreEntrega_Modulo6_CamiloHonorato.pdf`
+- Workflow: "Preentrega 6 Coderhouse" (duplicado del M5, inactivo). Circuito de voz agregado en paralelo al triaje por correo: Telegram Trigger → Telegram Get File → OpenAI Whisper (`data`, `es`) → IF de contingencia → AI Agent (Tools Agent, gpt-4o-mini, tool `manual_politicas_tyg` reutilizada del M5) → ElevenLabs (`eleven_multilingual_v2`, stability 0.65 / similarity 0.75) → Telegram Send Audio.
+- Contención financiera: el System Prompt limita las respuestas a 200 caracteres. Medición real en la prueba: 152.
+- Compliance: binarios en memoria volátil y las cuatro políticas de guardado en "Do not save"; audio y transcripción se destruyen al cerrar el flujo.
+- Desviaciones declaradas: Send Audio en vez de Send Voice (n8n no expone esa operación); nodo intermedio de descarga porque el trigger entrega solo el `file_id`; la voz va como rama paralela porque HubSpot y Gmail dependen del correo del cliente.
 - **Chunking:** semántico por título, un fragmento por sección.
 - **Almacén:** Simple Vector Store de n8n + embeddings `text-embedding-3-small`. El plan gratuito de LlamaCloud no permite índices.
 - **Recuperación:** Top-K = 3. Sin Minimum Score (no disponible en el nodo), compensado con la regla "No sé".
