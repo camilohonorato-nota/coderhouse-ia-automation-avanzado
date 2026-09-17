@@ -304,3 +304,16 @@ Proyecto de Google Cloud en modo Testing: los tokens de Gmail vencen cada 7 día
 El workflow se deja inactivo: activarlo haría que cada correo entrante consuma saldo de OpenAI.
 Para importar cualquier workflow: crear las credenciales propias en n8n (OpenAI, Google
 Sheets, Gmail y, desde el Checkpoint 3, Airtable y Postgres) y seleccionarlas en cada nodo.
+## Checkpoint 5 — Base de conocimiento documental (RAG)
+
+**Entrega:** `PreEntrega_Modulo5_CamiloHonorato.pdf`
+
+El Redactor de Respuesta pasa de LLM Chain a **AI Agent (Tools Agent) con RAG**: antes de responder un correo consulta el *Manual de Políticas Comerciales* (documento ficticio de 22 secciones) mediante la herramienta `manual_politicas_tyg`.
+
+- **Parseo:** LlamaParse (nivel Cost Effective), con curación manual del markdown (jerarquía de títulos y tablas partidas por salto de página).
+- **Chunking:** semántico por título, un fragmento por sección.
+- **Almacén:** Simple Vector Store de n8n + embeddings `text-embedding-3-small`. El plan gratuito de LlamaCloud no permite índices.
+- **Recuperación:** Top-K = 3. Sin Minimum Score (no disponible en el nodo), compensado con la regla "No sé".
+- **System Prompt:** respuestas basadas al 100% en fuentes, citación de sección obligatoria y frase de escape "No sé".
+- **Validación:** 5 preguntas ciegas con vocabulario informal; precisión y análisis en el PDF.
+- **Limitación:** el almacén vive en memoria; tras reiniciar n8n hay que re-ejecutar la ingesta.
